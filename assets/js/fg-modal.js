@@ -86,8 +86,9 @@ angular.module('fgModal', ['ngAnimate'])
                 return deferred[e].promise;
             };
 
-            this.link = function (element) {
+            this.link = function (scope, element) {
                 _this.element = element;
+                _this.$scope = scope;
                 $element.append(element);
                 _this.element.css('z-index', 10000);
                 activeModals.forEach(function (modal) {
@@ -146,7 +147,9 @@ angular.module('fgModal', ['ngAnimate'])
             var _this = this;
 
             var link = function (element) {
-                $compile(element)(scope, modal.link);
+                $compile(element)(scope, function (element) {
+                    modal.link(scope, element);
+                });
             };
 
             if (this.templateUrl) {
@@ -157,7 +160,7 @@ angular.module('fgModal', ['ngAnimate'])
                     type: 'text/html'
                 }).success(link);
             } else {
-                link(this.template);
+                link(scope, this.template);
             }
 
             if (this.defaults) {
