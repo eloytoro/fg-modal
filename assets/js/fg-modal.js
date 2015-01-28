@@ -29,7 +29,6 @@ angular.module('fgModal', ['ngAnimate'])
 
         var $scope = $rootScope.$new(),
             $element,
-            deferred,
             activeModals = [];
 
         var Modal = function (template) {
@@ -40,7 +39,10 @@ angular.module('fgModal', ['ngAnimate'])
                 when: function (prop) {
                     return $q.all(callbacks[prop].map(function (cb) {
                         return $q.when(cb());
-                    })).finally(deferred[prop].resolve, deferred[prop].reject);
+                    })).then(function () {
+                        deferred[prop].resolve();
+                        return deferred[prop].promise;
+                    });
                 },
                 call: function (prop) {
                     callbacks[prop].forEach(function (cb) {
@@ -61,24 +63,28 @@ angular.module('fgModal', ['ngAnimate'])
 
             this.accept = function () {
                 return callbacks.when('accept')
-                    .finally(_this.destroy);
+                    .then(_this.destroy);
             };
 
             this.dismiss = function () {
                 return callbacks.when('dismiss')
-                    .finally(_this.destroy);
+                    .then(_this.destroy);
             };
 
             this.destroy = function () {
                 return callbacks.when('destroy')
-                    .finally(function () {
+                    .then(function () {
                         var index = activeModals.indexOf(_this);
                         activeModals.splice(index, 1);
                         _this.element.remove();
+
                         activeModals.forEach(function (modal) {
                             if (modal.$index > _this.$index) modal.overlay();
                         });
+
                         $scope.show = activeModals.length;
+
+                        _this.$scope.$destroy();
                     });
             };
 
