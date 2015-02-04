@@ -138,7 +138,7 @@ angular.module('fgModal', ['ngAnimate'])
 
             scope = scope || {};
 
-            if (scope.constructor.name === 'Object') {
+            if (scope.constructor.name !== 'Scope') {
                 var tempScope = $rootScope.$new();
                 for (var key in scope) {
                     tempScope[key] = scope[key];
