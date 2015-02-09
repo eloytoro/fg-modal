@@ -171,7 +171,13 @@ angular.module('fgModal', ['ngAnimate'])
 
             if (this.defaults) {
                 Object.keys(this.defaults).forEach(function (key) {
-                    modal.on(key, _this.defaults[key]);
+                    if (_this.defaults[key] instanceof Array) {
+                        _this.defaults[key].forEach(function (action) {
+                            modal.on(key, action);
+                        });
+                    } else {
+                        modal.on(key, _this.defaults[key]);
+                    }
                 });
             }
 
