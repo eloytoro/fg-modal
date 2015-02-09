@@ -54,7 +54,6 @@ angular.module('fgModal', ['ngAnimate'])
             'accept dismiss link overlay conceal destroy'
                 .split(' ')
                 .forEach(function (e) {
-                    deferred[e] = $q.defer();
                     callbacks[e] = [];
                 });
 
@@ -89,6 +88,7 @@ angular.module('fgModal', ['ngAnimate'])
             };
 
             this.when = function (e) {
+                deferred[e] = deferred[e] || $q.defer();
                 return deferred[e].promise;
             };
 
@@ -102,7 +102,7 @@ angular.module('fgModal', ['ngAnimate'])
                 });
                 activeModals.unshift(_this);
                 $scope.show = true;
-                callbacks.call('link');
+                return callbacks.when('link');
             };
 
             this.overlay = function () {
