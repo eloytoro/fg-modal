@@ -55,6 +55,7 @@ angular.module('fgModal', ['ngAnimate'])
                 .split(' ')
                 .forEach(function (e) {
                     callbacks[e] = [];
+                    deferred[e] = $q.defer();
                 });
 
             this.$template = template;
@@ -88,7 +89,6 @@ angular.module('fgModal', ['ngAnimate'])
             };
 
             this.when = function (e) {
-                deferred[e] = deferred[e] || $q.defer();
                 return deferred[e].promise;
             };
 
