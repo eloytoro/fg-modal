@@ -102,7 +102,7 @@ angular.module('fgModal', ['ngAnimate'])
                 });
                 activeModals.unshift(_this);
                 $scope.show = true;
-                return callbacks.when('link');
+                callbacks.call('link');
             };
 
             this.overlay = function () {
@@ -166,7 +166,7 @@ angular.module('fgModal', ['ngAnimate'])
                     type: 'text/html'
                 }).success(link);
             } else {
-                link(scope, this.template);
+                link(this.template);
             }
 
             if (this.defaults) {
