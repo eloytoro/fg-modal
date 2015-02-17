@@ -5,6 +5,7 @@ angular.module('fgModal', ['ngAnimate'])
         this.templateUrl = config.templateUrl;
         this.template = config.template;
         this.defaults = config.defaults;
+        this.controller = config.controller;
         this.name = name;
     };
 
@@ -20,7 +21,7 @@ angular.module('fgModal', ['ngAnimate'])
         return provider;
     };
 
-    this.$get = function ($document, $compile, $rootScope, $http, $templateCache, $q, $animate, $injector) {
+    this.$get = function ($document, $compile, $rootScope, $http, $templateCache, $q, $animate, $injector, $controller) {
 
         // Set all configurations
         Object.keys(storage).forEach(function (key) {
@@ -95,6 +96,9 @@ angular.module('fgModal', ['ngAnimate'])
             this.link = function (scope, element) {
                 _this.element = element;
                 _this.$scope = scope;
+                $controller(template.controller, {
+                    $scope: scope
+                });
                 $element.append(element);
                 _this.element.css('z-index', 10000);
                 activeModals.forEach(function (modal) {
