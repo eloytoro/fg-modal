@@ -96,9 +96,10 @@ angular.module('fgModal', ['ngAnimate'])
             this.link = function (scope, element) {
                 _this.element = element;
                 _this.$scope = scope;
-                $controller(template.controller, {
-                    $scope: scope
-                });
+                if (template.controller)
+                    $controller(template.controller, {
+                        $scope: scope
+                    });
                 $element.append(element);
                 _this.element.css('z-index', 10000);
                 activeModals.forEach(function (modal) {
