@@ -98,7 +98,8 @@ angular.module('fgModal', ['ngAnimate'])
                 _this.$scope = scope;
                 if (template.controller)
                     $controller(template.controller, {
-                        $scope: scope
+                        $scope: scope,
+                        $modal: _this
                     });
                 $element.append(element);
                 _this.element.css('z-index', 10000);
