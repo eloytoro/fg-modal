@@ -6,8 +6,8 @@
   ],
   "description": "4Geeks's implementation for an Angular Modal service",
   "main": [
-    "assets/js/fg-modal.js",
-    "assets/stylesheets/fg-modal.scss"
+    "dist/fg-modal.min.js",
+    "dist/fg-modal.scss"
   ],
   "keywords": [
     "fg-modal"
@@ -17,6 +17,8 @@
     "**/.*",
     "node_modules",
     "bower_components",
+    "gulpfile.js",
+    "package.json",
     "test",
     "tests"
   ],
