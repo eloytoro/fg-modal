@@ -34,7 +34,11 @@ angular.module('fgModal', ['ngAnimate'])
 
         var Modal = function (template) {
             var _this = this,
-                deferred = {};
+                deferred = {
+                    accept: $q.defer(),
+                    dismiss: $q.defer(),
+                    destroy: $q.defer()
+                };
 
             var callbacks = {
                 when: function (prop) {
@@ -49,15 +53,9 @@ angular.module('fgModal', ['ngAnimate'])
                     callbacks[prop].forEach(function (cb) {
                         cb();
                     });
-                }
+                },
+                link: [], overlay: [], conceal: []
             };
-
-            'accept dismiss link overlay conceal destroy'
-                .split(' ')
-                .forEach(function (e) {
-                    callbacks[e] = [];
-                    deferred[e] = $q.defer();
-                });
 
             this.$template = template;
             this.$index = 0;
