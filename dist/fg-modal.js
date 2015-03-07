@@ -54,7 +54,8 @@ angular.module('fgModal', ['ngAnimate'])
                         cb();
                     });
                 },
-                link: [], overlay: [], conceal: []
+                link: [], overlay: [], conceal: [],
+                accept: [], dismiss: [], destroy: []
             };
 
             this.$template = template;

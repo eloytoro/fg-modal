@@ -2,6 +2,7 @@ var gulp = require('gulp'),
     annotate = require('gulp-ng-annotate'),
     rename = require('gulp-rename'),
     merge = require('merge-stream'),
+    beautify = require('gulp-jsbeautifier'),
     uglify = require('gulp-uglify');
 
 var globs = {
@@ -17,6 +18,7 @@ gulp.task('build', function () {
         .pipe(annotate())
         .pipe(gulp.dest(globs.main))
         .pipe(uglify())
+        .pipe(beautify())
         .pipe(rename('fg-modal.min.js'))
         .pipe(gulp.dest(globs.main));
     return merge(scss, js);
