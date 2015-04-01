@@ -38,10 +38,12 @@ angular.module('fgModal', ['ngAnimate'])
                     accept: $q.defer(),
                     dismiss: $q.defer(),
                     destroy: $q.defer()
-                };
-
-            var callbacks = {
-                when: function (prop) {
+                },
+                callbacks = {
+                    link: [], overlay: [], conceal: [],
+                    accept: [], dismiss: [], destroy: []
+                },
+                resolve = function (prop) {
                     return $q.all(callbacks[prop].map(function (cb) {
                         return $q.when(cb());
                     })).then(function () {
@@ -49,30 +51,27 @@ angular.module('fgModal', ['ngAnimate'])
                         return deferred[prop].promise;
                     });
                 },
-                call: function (prop) {
+                call = function (prop) {
                     callbacks[prop].forEach(function (cb) {
                         cb();
                     });
-                },
-                link: [], overlay: [], conceal: [],
-                accept: [], dismiss: [], destroy: []
-            };
+                };
 
             this.$template = template;
             this.$index = 0;
 
             this.accept = function () {
-                return callbacks.when('accept')
+                return resolve('accept')
                     .then(_this.destroy);
             };
 
             this.dismiss = function () {
-                return callbacks.when('dismiss')
+                return resolve('dismiss')
                     .then(_this.destroy);
             };
 
             this.destroy = function () {
-                return callbacks.when('destroy')
+                return resolve('destroy')
                     .then(function () {
                         var index = activeModals.indexOf(_this);
                         activeModals.splice(index, 1);
@@ -107,20 +106,20 @@ angular.module('fgModal', ['ngAnimate'])
                 });
                 activeModals.unshift(_this);
                 $scope.show = true;
-                callbacks.call('link');
+                call('link');
             };
 
             this.overlay = function () {
                 if (_this.$index === 0) return;
                 _this.element.css('z-index', '+=1');
                 _this.$index--;
-                callbacks.call('overlay');
+                call('overlay');
             };
 
             this.conceal = function () {
                 _this.element.css('z-index', '-=1');
                 _this.$index++;
-                callbacks.call('conceal');
+                call('conceal');
             };
 
             this.on = function (e, cb) {
@@ -143,7 +142,7 @@ angular.module('fgModal', ['ngAnimate'])
 
             scope = scope || {};
 
-            if (scope.constructor.name !== 'Scope') {
+            if (!scope.$id) {
                 var tempScope = $rootScope.$new();
                 for (var key in scope) {
                     tempScope[key] = scope[key];
@@ -194,7 +193,7 @@ angular.module('fgModal', ['ngAnimate'])
             return storage[name];
         };
 
-        factory.list = function (index) {
+        factory.list = function () {
             return activeModals.sort(function (a, b) {
                 return a.$index > b.$index;
             });
