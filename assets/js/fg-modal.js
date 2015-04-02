@@ -75,7 +75,7 @@ angular.module('fgModal', ['ngAnimate'])
                     .then(function () {
                         var index = activeModals.indexOf(_this);
                         activeModals.splice(index, 1);
-                        _this.element.remove();
+                        _this.$element.remove();
 
                         activeModals.forEach(function (modal) {
                             if (modal.$index > _this.$index) modal.overlay();
@@ -92,15 +92,16 @@ angular.module('fgModal', ['ngAnimate'])
             };
 
             this.link = function (scope, element) {
-                _this.element = element;
+                _this.$element = element;
                 _this.$scope = scope;
                 if (template.controller)
                     $controller(template.controller, {
                         $scope: scope,
-                        $modal: _this
+                        $modal: _this,
+                        $element: element
                     });
                 $element.append(element);
-                _this.element.css('z-index', 10000);
+                _this.$element.css('z-index', 10000);
                 activeModals.forEach(function (modal) {
                     modal.conceal();
                 });
@@ -111,13 +112,13 @@ angular.module('fgModal', ['ngAnimate'])
 
             this.overlay = function () {
                 if (_this.$index === 0) return;
-                _this.element.css('z-index', '+=1');
+                _this.$element.css('z-index', '+=1');
                 _this.$index--;
                 call('overlay');
             };
 
             this.conceal = function () {
-                _this.element.css('z-index', '-=1');
+                _this.$element.css('z-index', '-=1');
                 _this.$index++;
                 call('conceal');
             };
