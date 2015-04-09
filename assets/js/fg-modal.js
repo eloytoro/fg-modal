@@ -4,8 +4,9 @@ angular.module('fgModal', ['ngAnimate'])
     var ModalTemplate = function (name, config) {
         this.templateUrl = config.templateUrl;
         this.template = config.template;
-        this.defaults = config.defaults;
+        this.defaults = config.defaults || {};
         this.controller = config.controller;
+        this.resolve = config.resolve || {};
         this.name = name;
     };
 
@@ -91,15 +92,15 @@ angular.module('fgModal', ['ngAnimate'])
                 return deferred[e].promise;
             };
 
-            this.link = function (scope, element) {
+            this.link = function (scope, element, locals) {
                 _this.$element = element;
                 _this.$scope = scope;
-                if (template.controller)
-                    $controller(template.controller, {
-                        $scope: scope,
-                        $modal: _this,
-                        $element: element
-                    });
+                if (template.controller) {
+                    locals.$scope = scope;
+                    locals.$modal = _this;
+                    locals.$element = element;
+                    $controller(template.controller, locals);
+                }
                 $element.append(element);
                 _this.$element.css('z-index', 10000);
                 activeModals.forEach(function (modal) {
@@ -157,34 +158,34 @@ angular.module('fgModal', ['ngAnimate'])
 
             var _this = this;
 
-            var link = function (element) {
+            var link = function (element, locals) {
                 $compile(element)(scope, function (element) {
-                    modal.link(scope, element);
+                    modal.link(scope, element, locals);
                 });
             };
 
-            if (this.templateUrl) {
-                $http({
+            $q.all({
+                locals: $q.all(Object.keys(this.resolve).reduce(function (acc, key) {
+                    acc[key] = $q.when($injector.invoke(_this.resolve[key]));
+                    return acc;
+                }, {})),
+                template: $q.when(this.template || $http({
                     method: 'GET',
                     cache: $templateCache,
                     url: this.templateUrl,
                     type: 'text/html'
-                }).success(link);
-            } else {
-                link(this.template);
-            }
+                }))
+            }).then(function (results) {
+                link(results.template.data, results.locals);
+            });
 
-            if (this.defaults) {
-                Object.keys(this.defaults).forEach(function (key) {
-                    if (_this.defaults[key] instanceof Array) {
-                        _this.defaults[key].forEach(function (action) {
-                            modal.on(key, action);
-                        });
-                    } else {
-                        modal.on(key, _this.defaults[key]);
-                    }
-                });
-            }
+            Object.keys(this.defaults).forEach(function (key) {
+                var setting = _this.defaults[key];
+                (setting instanceof Array ? setting : [setting])
+                    .forEach(function (callback) {
+                        modal.on(key, callback);
+                    });
+            });
 
             return modal;
         };
