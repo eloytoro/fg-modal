@@ -158,12 +158,6 @@ angular.module('fgModal', ['ngAnimate'])
 
             var _this = this;
 
-            var link = function (element, locals) {
-                $compile(element)(scope, function (element) {
-                    modal.link(scope, element, locals);
-                });
-            };
-
             $q.all({
                 locals: $q.all(Object.keys(this.resolve).reduce(function (acc, key) {
                     acc[key] = $q.when($injector.invoke(_this.resolve[key]));
@@ -176,7 +170,9 @@ angular.module('fgModal', ['ngAnimate'])
                     type: 'text/html'
                 }))
             }).then(function (results) {
-                link(results.template.data, results.locals);
+                $compile(results.template.data)(scope, function (element) {
+                    modal.link(scope, element, results.locals);
+                });
             });
 
             Object.keys(this.defaults).forEach(function (key) {
