@@ -22,6 +22,9 @@ angular.module('fgModal', ['ngAnimate'])
         return provider;
     };
 
+    this.loadingTemplateUrl = null;
+    this.loadingMask = true;
+
     this.$get = ["$document", "$compile", "$rootScope", "$http", "$templateCache", "$q", "$animate", "$injector", "$controller", function ($document, $compile, $rootScope, $http, $templateCache, $q, $animate, $injector, $controller) {
 
         // Set all configurations
@@ -32,6 +35,8 @@ angular.module('fgModal', ['ngAnimate'])
         var $scope = $rootScope.$new(),
             $element,
             activeModals = [];
+
+        $scope.loadingTemplateUrl = provider.loadingTemplateUrl;
 
         var Modal = function (template) {
             var _this = this,
@@ -107,7 +112,6 @@ angular.module('fgModal', ['ngAnimate'])
                     modal.conceal();
                 });
                 activeModals.unshift(_this);
-                $scope.show = true;
                 call('link');
             };
 
@@ -132,9 +136,11 @@ angular.module('fgModal', ['ngAnimate'])
             };
         };
 
-        $compile(angular.element(
-            '<div class="fg-modal-wrapper ng-hide" ng-show="show"></div>'
-        ))($scope, function (clone) {
+        $compile(angular.element([
+            '<div class="fg-modal-wrapper ng-hide" ng-show="show">',
+                '<div ng-show="loading" ng-include="loadingTemplateUrl"></div>',
+            '</div>'
+        ].join('')))($scope, function (clone) {
             $element = clone;
             $document.find('body').append($element);
         });
@@ -158,6 +164,9 @@ angular.module('fgModal', ['ngAnimate'])
 
             var _this = this;
 
+            $scope.loading = !activeModals.length && provider.loadingMask;
+            $scope.show = provider.loadingMask;
+
             $q.all({
                 locals: $q.all(Object.keys(this.resolve).reduce(function (acc, key) {
                     acc[key] = $q.when($injector.invoke(_this.resolve[key]));
@@ -171,6 +180,8 @@ angular.module('fgModal', ['ngAnimate'])
                 }))
             }).then(function (results) {
                 $compile(results.template.data)(scope, function (element) {
+                    $scope.loading = false;
+                    $scope.show = true;
                     modal.link(scope, element, results.locals);
                 });
             });
