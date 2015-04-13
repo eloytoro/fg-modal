@@ -164,8 +164,8 @@ angular.module('fgModal', ['ngAnimate'])
 
             var _this = this;
 
-            $scope.loading = !activeModals.length && provider.loadingMask;
-            $scope.show = provider.loadingMask;
+            $scope.loading = !$scope.show && provider.loadingMask;
+            $scope.show = $scope.show || provider.loadingMask;
 
             $q.all({
                 locals: $q.all(Object.keys(this.resolve).reduce(function (acc, key) {

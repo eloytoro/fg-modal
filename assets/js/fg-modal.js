@@ -25,7 +25,7 @@ angular.module('fgModal', ['ngAnimate'])
     this.loadingTemplateUrl = null;
     this.loadingMask = true;
 
-    this.$get = ["$document", "$compile", "$rootScope", "$http", "$templateCache", "$q", "$animate", "$injector", "$controller", function ($document, $compile, $rootScope, $http, $templateCache, $q, $animate, $injector, $controller) {
+    this.$get = function ($document, $compile, $rootScope, $http, $templateCache, $q, $animate, $injector, $controller) {
 
         // Set all configurations
         Object.keys(storage).forEach(function (key) {
@@ -164,8 +164,8 @@ angular.module('fgModal', ['ngAnimate'])
 
             var _this = this;
 
-            $scope.loading = !activeModals.length && provider.loadingMask;
-            $scope.show = provider.loadingMask;
+            $scope.loading = !$scope.show && provider.loadingMask;
+            $scope.show = $scope.show || provider.loadingMask;
 
             $q.all({
                 locals: $q.all(Object.keys(this.resolve).reduce(function (acc, key) {
@@ -209,5 +209,5 @@ angular.module('fgModal', ['ngAnimate'])
         };
 
         return factory;
-    }];
+    };
 });
