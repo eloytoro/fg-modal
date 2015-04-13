@@ -37,6 +37,11 @@ fgModal is fully capable of recreating the same logic (using a different API) bu
 * `templateUrl | template` - The `ModalTemplate`'s html template. **Note:** you can refer to the modal's instance using `$modal` inside angular expressions within the html
 * `controller` - Controller with logic, injects `$scope`, `$element` and `$modal`
 * `defaults` - List of pre-defined events that will be applied to every `Modal` instance once they're created.
+* `resolve` - Very much like any other resolve is an object that resolves the given key values to the value the promise they reference to. The modal won't link until every resolve is fullfiled.
+
+`ModalProvider.loadingTemplateUrl` - If defined then it will load the default template while the modal is being loaded. Its defined within the `$rootScope`
+
+`ModalProvider.loadingMask` - If true it will show the mask above the webpage while the modal is loading, preventing the user from interacting with anything else while it loads. (defaults to true)
 
 ##Service
 
