@@ -97,24 +97,6 @@ angular.module('fgModal', ['ngAnimate'])
                 return deferred[e].promise;
             };
 
-            this.link = function (scope, element, locals) {
-                _this.$element = element;
-                _this.$scope = scope;
-                if (template.controller) {
-                    locals.$scope = scope;
-                    locals.$modal = _this;
-                    locals.$element = element;
-                    $controller(template.controller, locals);
-                }
-                $element.append(element);
-                _this.$element.css('z-index', 10000);
-                activeModals.forEach(function (modal) {
-                    modal.conceal();
-                });
-                activeModals.unshift(_this);
-                call('link');
-            };
-
             this.overlay = function () {
                 if (_this.$index === 0) return;
                 _this.$element.css('z-index', '+=1');
@@ -134,16 +116,18 @@ angular.module('fgModal', ['ngAnimate'])
                 });
                 return _this;
             };
+
+            this.$$trigger = call;
         };
 
-        $compile(angular.element([
+        var $element = $compile(angular.element([
             '<div class="fg-modal-wrapper ng-hide" ng-show="show">',
                 '<div ng-show="loading" ng-include="loadingTemplateUrl"></div>',
+                '<div ng-click="dismiss()" class="fg-modal-background"></div>',
             '</div>'
-        ].join('')))($scope, function (clone) {
-            $element = clone;
-            $document.find('body').append($element);
-        });
+        ].join('')))($scope);
+
+        $document.find('body').append($element);
 
         ModalTemplate.prototype.pop = function (scope) {
             var modal = new Modal(this);
@@ -151,11 +135,10 @@ angular.module('fgModal', ['ngAnimate'])
             scope = scope || {};
 
             if (!scope.$id) {
-                var tempScope = $rootScope.$new();
-                for (var key in scope) {
-                    tempScope[key] = scope[key];
-                }
-                scope = tempScope;
+                scope = Object.keys(scope).reduce(function (acc, key) {
+                    acc[key] = scope[key];
+                    return acc;
+                }, $scope.$new());
             } else {
                 scope = scope.$new();
             }
@@ -171,7 +154,10 @@ angular.module('fgModal', ['ngAnimate'])
                 locals: $q.all(Object.keys(this.resolve).reduce(function (acc, key) {
                     acc[key] = $q.when($injector.invoke(_this.resolve[key]));
                     return acc;
-                }, {})),
+                }, {
+                    $scope: scope,
+                    $modal: modal
+                })),
                 template: $q.when(this.template || $http({
                     method: 'GET',
                     cache: $templateCache,
@@ -179,11 +165,20 @@ angular.module('fgModal', ['ngAnimate'])
                     type: 'text/html'
                 }))
             }).then(function (results) {
-                $compile(results.template.data)(scope, function (element) {
-                    $scope.loading = false;
-                    $scope.show = true;
-                    modal.link(scope, element, results.locals);
+                var clone = $compile(results.template.data)(scope);
+                modal.$scope = scope;
+                if (_this.controller)
+                    $controller(_this.controller, results.locals);
+                $scope.loading = false;
+                $scope.show = true;
+                $element.append(clone);
+                modal.$element = clone;
+                clone.css('z-index', 10000);
+                activeModals.forEach(function (item) {
+                    item.conceal();
                 });
+                activeModals.unshift(modal);
+                modal.$$trigger('link');
             });
 
             Object.keys(this.defaults).forEach(function (key) {
@@ -206,6 +201,11 @@ angular.module('fgModal', ['ngAnimate'])
             return activeModals.sort(function (a, b) {
                 return a.$index > b.$index;
             });
+        };
+
+        $scope.dismiss = function () {
+            var first = factory.list()[0];
+            if (first) first.dismiss();
         };
 
         return factory;

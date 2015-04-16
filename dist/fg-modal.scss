@@ -28,3 +28,10 @@
     max-width: 70%;
     max-height: 80%;
 }
+
+.fg-modal-background {
+    left: 0; top: 0; right: 0; bottom: 0;
+    width: 100%; height: 100%;
+    z-index: 9000;
+    position: absolute;
+}
