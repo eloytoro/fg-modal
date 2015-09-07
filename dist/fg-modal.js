@@ -165,7 +165,9 @@ angular.module('fgModal', ['ngAnimate'])
                     type: 'text/html'
                 }))
             }).then(function (results) {
-                var clone = $compile(results.template.data)(scope);
+                var clone = angular.element(results.template.data)
+                    .addClass('fg-modal');
+                clone = $compile(clone)(scope);
                 modal.$scope = scope;
                 if (_this.controller)
                     $controller(_this.controller, results.locals);
@@ -173,7 +175,6 @@ angular.module('fgModal', ['ngAnimate'])
                 $scope.show = true;
                 $element.append(clone);
                 modal.$element = clone;
-                clone.css('z-index', 10000);
                 activeModals.forEach(function (item) {
                     item.conceal();
                 });

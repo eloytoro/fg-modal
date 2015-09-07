@@ -15,18 +15,24 @@
     }
 
     &.ng-hide-add, &.ng-hide-remove {
-        @include transition(0.3s all);
         display: block !important;
     }
 
 }
 
-.fg-modal {
+.fg-modal-default {
     margin: auto;
     left: 0; top: 0; right: 0; bottom: 0;
     position: absolute;
     max-width: 70%;
     max-height: 80%;
+}
+
+.fg-modal {
+    z-index: 10000;
+    position: absolute;
+    margin: auto;
+    left: 0; top: 0; right: 0; bottom: 0;
 }
 
 .fg-modal-background {

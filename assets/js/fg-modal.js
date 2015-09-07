@@ -166,7 +166,7 @@ angular.module('fgModal', ['ngAnimate'])
                 }))
             }).then(function (results) {
                 var clone = angular.element(results.template.data)
-                    .css('z-index', 10000);
+                    .addClass('fg-modal');
                 clone = $compile(clone)(scope);
                 modal.$scope = scope;
                 if (_this.controller)
