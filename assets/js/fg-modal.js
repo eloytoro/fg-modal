@@ -6,6 +6,8 @@ angular.module('fgModal', ['ngAnimate'])
         this.template = config.template;
         this.defaults = config.defaults || {};
         this.controller = config.controller;
+        this.controllerAs = config.controllerAs;
+        this.class = config.class;
         this.resolve = config.resolve || {};
         this.name = name;
     };
@@ -38,7 +40,7 @@ angular.module('fgModal', ['ngAnimate'])
 
         $scope.loadingTemplateUrl = provider.loadingTemplateUrl;
 
-        var Modal = function (template) {
+        function Modal (template) {
             var _this = this,
                 deferred = {
                     accept: $q.defer(),
@@ -121,13 +123,19 @@ angular.module('fgModal', ['ngAnimate'])
         };
 
         var $element = $compile(angular.element([
-            '<div class="fg-modal-wrapper ng-hide" ng-show="show">',
+            '<div class="fg-modal-wrapper fg-modal-dropzone ng-hide" ng-show="show">',
                 '<div ng-show="loading" ng-include="loadingTemplateUrl"></div>',
-                '<div ng-click="dismiss()" class="fg-modal-background"></div>',
             '</div>'
         ].join('')))($scope);
 
         $document.find('body').append($element);
+
+        $element.on('mouseup', function (e) {
+            if (angular.element(e.target).hasClass('fg-modal-dropzone')) {
+                var first = factory.list()[0];
+                if (first) first.dismiss();
+            }
+        });
 
         ModalTemplate.prototype.pop = function (scope) {
             var modal = new Modal(this);
@@ -167,12 +175,17 @@ angular.module('fgModal', ['ngAnimate'])
             }).then(function (results) {
                 var clone = angular.element(results.template.data)
                     .addClass('fg-modal');
+                if (_this.class)
+                    clone.addClass(_this.class);
+                var ctrl;
                 clone = $compile(clone)(scope);
                 modal.$scope = scope;
                 if (_this.controller)
-                    $controller(_this.controller, results.locals);
+                    ctrl = $controller(_this.controller, results.locals);
                 $scope.loading = false;
                 $scope.show = true;
+                if (_this.controllerAs)
+                    scope[_this.controllerAs] = ctrl;
                 $element.append(clone);
                 modal.$element = clone;
                 activeModals.forEach(function (item) {
@@ -202,11 +215,6 @@ angular.module('fgModal', ['ngAnimate'])
             return activeModals.sort(function (a, b) {
                 return a.$index > b.$index;
             });
-        };
-
-        $scope.dismiss = function () {
-            var first = factory.list()[0];
-            if (first) first.dismiss();
         };
 
         return factory;

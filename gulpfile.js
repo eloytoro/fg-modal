@@ -16,9 +16,9 @@ gulp.task('build', function () {
         .pipe(gulp.dest(globs.main))
     var js = gulp.src(globs.js)
         .pipe(annotate())
+        .pipe(beautify())
         .pipe(gulp.dest(globs.main))
         .pipe(uglify())
-        .pipe(beautify())
         .pipe(rename('fg-modal.min.js'))
         .pipe(gulp.dest(globs.main));
     return merge(scss, js);

@@ -1,11 +1,13 @@
 angular.module('fgModal', ['ngAnimate'])
 
-.provider('Modal', function () {
-    var ModalTemplate = function (name, config) {
+.provider('Modal', function() {
+    var ModalTemplate = function(name, config) {
         this.templateUrl = config.templateUrl;
         this.template = config.template;
         this.defaults = config.defaults || {};
         this.controller = config.controller;
+        this.controllerAs = config.controllerAs;
+        this.class = config.class;
         this.resolve = config.resolve || {};
         this.name = name;
     };
@@ -14,8 +16,8 @@ angular.module('fgModal', ['ngAnimate'])
 
     var provider = this;
 
-    this.modal = function (name, invokable) {
-        storage[name] = function (injector) {
+    this.modal = function(name, invokable) {
+        storage[name] = function(injector) {
             var results = injector.invoke(invokable);
             return new ModalTemplate(name, results);
         };
@@ -25,10 +27,10 @@ angular.module('fgModal', ['ngAnimate'])
     this.loadingTemplateUrl = null;
     this.loadingMask = true;
 
-    this.$get = ["$document", "$compile", "$rootScope", "$http", "$templateCache", "$q", "$animate", "$injector", "$controller", function ($document, $compile, $rootScope, $http, $templateCache, $q, $animate, $injector, $controller) {
+    this.$get = ["$document", "$compile", "$rootScope", "$http", "$templateCache", "$q", "$animate", "$injector", "$controller", function($document, $compile, $rootScope, $http, $templateCache, $q, $animate, $injector, $controller) {
 
         // Set all configurations
-        Object.keys(storage).forEach(function (key) {
+        Object.keys(storage).forEach(function(key) {
             storage[key] = storage[key]($injector);
         });
 
@@ -38,7 +40,7 @@ angular.module('fgModal', ['ngAnimate'])
 
         $scope.loadingTemplateUrl = provider.loadingTemplateUrl;
 
-        var Modal = function (template) {
+        function Modal(template) {
             var _this = this,
                 deferred = {
                     accept: $q.defer(),
@@ -46,19 +48,23 @@ angular.module('fgModal', ['ngAnimate'])
                     destroy: $q.defer()
                 },
                 callbacks = {
-                    link: [], overlay: [], conceal: [],
-                    accept: [], dismiss: [], destroy: []
+                    link: [],
+                    overlay: [],
+                    conceal: [],
+                    accept: [],
+                    dismiss: [],
+                    destroy: []
                 },
-                resolve = function (prop) {
-                    return $q.all(callbacks[prop].map(function (cb) {
+                resolve = function(prop) {
+                    return $q.all(callbacks[prop].map(function(cb) {
                         return $q.when(cb());
-                    })).then(function () {
+                    })).then(function() {
                         deferred[prop].resolve();
                         return deferred[prop].promise;
                     });
                 },
-                call = function (prop) {
-                    callbacks[prop].forEach(function (cb) {
+                call = function(prop) {
+                    callbacks[prop].forEach(function(cb) {
                         cb();
                     });
                 };
@@ -66,24 +72,24 @@ angular.module('fgModal', ['ngAnimate'])
             this.$template = template;
             this.$index = 0;
 
-            this.accept = function () {
+            this.accept = function() {
                 return resolve('accept')
                     .then(_this.destroy);
             };
 
-            this.dismiss = function () {
+            this.dismiss = function() {
                 return resolve('dismiss')
                     .then(_this.destroy);
             };
 
-            this.destroy = function () {
+            this.destroy = function() {
                 return resolve('destroy')
-                    .then(function () {
+                    .then(function() {
                         var index = activeModals.indexOf(_this);
                         activeModals.splice(index, 1);
                         _this.$element.remove();
 
-                        activeModals.forEach(function (modal) {
+                        activeModals.forEach(function(modal) {
                             if (modal.$index > _this.$index) modal.overlay();
                         });
 
@@ -93,25 +99,25 @@ angular.module('fgModal', ['ngAnimate'])
                     });
             };
 
-            this.when = function (e) {
+            this.when = function(e) {
                 return deferred[e].promise;
             };
 
-            this.overlay = function () {
+            this.overlay = function() {
                 if (_this.$index === 0) return;
                 _this.$element.css('z-index', '+=1');
                 _this.$index--;
                 call('overlay');
             };
 
-            this.conceal = function () {
+            this.conceal = function() {
                 _this.$element.css('z-index', '-=1');
                 _this.$index++;
                 call('conceal');
             };
 
-            this.on = function (e, cb) {
-                e.split(' ').forEach(function (e) {
+            this.on = function(e, cb) {
+                e.split(' ').forEach(function(e) {
                     callbacks[e].push(cb.bind(_this));
                 });
                 return _this;
@@ -121,21 +127,27 @@ angular.module('fgModal', ['ngAnimate'])
         };
 
         var $element = $compile(angular.element([
-            '<div class="fg-modal-wrapper ng-hide" ng-show="show">',
-                '<div ng-show="loading" ng-include="loadingTemplateUrl"></div>',
-                '<div ng-click="dismiss()" class="fg-modal-background"></div>',
+            '<div class="fg-modal-wrapper fg-modal-dropzone ng-hide" ng-show="show">',
+            '<div ng-show="loading" ng-include="loadingTemplateUrl"></div>',
             '</div>'
         ].join('')))($scope);
 
         $document.find('body').append($element);
 
-        ModalTemplate.prototype.pop = function (scope) {
+        $element.on('mouseup', function(e) {
+            if (angular.element(e.target).hasClass('fg-modal-dropzone')) {
+                var first = factory.list()[0];
+                if (first) first.dismiss();
+            }
+        });
+
+        ModalTemplate.prototype.pop = function(scope) {
             var modal = new Modal(this);
 
             scope = scope || {};
 
             if (!scope.$id) {
-                scope = Object.keys(scope).reduce(function (acc, key) {
+                scope = Object.keys(scope).reduce(function(acc, key) {
                     acc[key] = scope[key];
                     return acc;
                 }, $scope.$new());
@@ -151,7 +163,7 @@ angular.module('fgModal', ['ngAnimate'])
             $scope.show = $scope.show || provider.loadingMask;
 
             $q.all({
-                locals: $q.all(Object.keys(this.resolve).reduce(function (acc, key) {
+                locals: $q.all(Object.keys(this.resolve).reduce(function(acc, key) {
                     acc[key] = $q.when($injector.invoke(_this.resolve[key]));
                     return acc;
                 }, {
@@ -164,49 +176,49 @@ angular.module('fgModal', ['ngAnimate'])
                     url: this.templateUrl,
                     type: 'text/html'
                 }))
-            }).then(function (results) {
+            }).then(function(results) {
                 var clone = angular.element(results.template.data)
                     .addClass('fg-modal');
+                if (_this.class)
+                    clone.addClass(_this.class);
+                var ctrl;
                 clone = $compile(clone)(scope);
                 modal.$scope = scope;
                 if (_this.controller)
-                    $controller(_this.controller, results.locals);
+                    ctrl = $controller(_this.controller, results.locals);
                 $scope.loading = false;
                 $scope.show = true;
+                if (_this.controllerAs)
+                    scope[_this.controllerAs] = ctrl;
                 $element.append(clone);
                 modal.$element = clone;
-                activeModals.forEach(function (item) {
+                activeModals.forEach(function(item) {
                     item.conceal();
                 });
                 activeModals.unshift(modal);
                 modal.$$trigger('link');
             });
 
-            Object.keys(this.defaults).forEach(function (key) {
+            Object.keys(this.defaults).forEach(function(key) {
                 var setting = _this.defaults[key];
                 (setting instanceof Array ? setting : [setting])
-                    .forEach(function (callback) {
-                        modal.on(key, callback);
-                    });
+                .forEach(function(callback) {
+                    modal.on(key, callback);
+                });
             });
 
             return modal;
         };
 
-        var factory = function (name) {
+        var factory = function(name) {
             if (!name) return activeModals[0];
             return storage[name];
         };
 
-        factory.list = function () {
-            return activeModals.sort(function (a, b) {
+        factory.list = function() {
+            return activeModals.sort(function(a, b) {
                 return a.$index > b.$index;
             });
-        };
-
-        $scope.dismiss = function () {
-            var first = factory.list()[0];
-            if (first) first.dismiss();
         };
 
         return factory;
