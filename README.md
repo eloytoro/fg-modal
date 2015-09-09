@@ -31,29 +31,31 @@ Note that this logic is defined within the view's controller, that means that th
 
 fgModal is fully capable of recreating the same logic (using a different API) but instead of defining modals and their settings within controllers you'll be defining them using a `provider`
 
-##Provider
+## Provider
 
 `ModalProvider.modal(name, options)` - defines a new modal in your app, the `options` are
 * `templateUrl | template` - The `ModalTemplate`'s html template. **Note:** you can refer to the modal's instance using `$modal` inside angular expressions within the html
 * `controller` - Controller with logic, injects `$scope`, `$element` and `$modal`
-* `defaults` - List of pre-defined events that will be applied to every `Modal` instance once they're created.
-* `resolve` - Very much like any other resolve is an object that resolves the given key values to the value the promise they reference to. The modal won't link until every resolve is fullfiled.
+* `controllerAs` - Alias for the controller within the scope
+* `defaults` - List of pre-defined events that will be applied to every `Modal` instance once they're created. (optional)
+* `resolve` - Very much like any other resolve is an object that resolves the given key values to the value the promise they reference to. The modal won't link until every resolve is fullfiled. (optional)
+* `class` - A css class that will be added to the modal once its linked (optional)
 
 `ModalProvider.loadingTemplateUrl` - If defined then it will load the default template while the modal is being loaded. Its defined within the `$rootScope`
 
 `ModalProvider.loadingMask` - If true it will show the mask above the webpage while the modal is loading, preventing the user from interacting with anything else while it loads. (defaults to true)
 
-##Service
+## Service
 
 `Modal(name)` - Returns the `ModalTemplate` that goes by the given name.
 
 `Modal.list` - Returns an array of all existing modals sorted by their priority.
 
-##ModalTemplate
+## ModalTemplate
 
 `ModalTemplate.pop(scope)` - Instantiates a new modal, the scope parameter will be copied to the modal's internal scope, it can be either a scope or an object.
 
-##Modal
+## Modal
 
 `Modal.accept()` - Closes the modal triggering the `accept` event.
 
@@ -79,12 +81,25 @@ You can pass many event names to the same callback.
 
 `Modal.when(event)` - Returns a promise that resolves when all of the event's callbacks are finished (or after all promises hooked to the event are resolved), only works for `accept`, `dismiss` or `destroy`
 
-###Additional self-explanatory properties
+## #Additional self-explanatory properties
 * `Modal.$scope`
 * `Modal.$element`
 * `Modal.$template`
 
-##Example
+## SCSS
+
+Theres a set of built-in css classes.
+
+`.fg-modal-wrapper` - Fixed container parent for all modals.
+
+`.fg-modal` - Appended to every modal created, its `z-index` starts at 10000
+
+`.fg-modal-(lg|md|sm)` - Some default modal sizes
+
+`.fg-modal-dropzone` - Add this class to any container and when clicked it will dismiss the current modal
+
+
+## Example
 ```javascript
 // config definition
 ModalProvider.modal('newPoll', function () {
