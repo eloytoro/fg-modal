@@ -1,4 +1,4 @@
-angular.module('fgModal', ['ngAnimate'])
+angular.module('fg.modal', ['ngAnimate'])
 
 .provider('Modal', function () {
     var ModalTemplate = function (name, config) {

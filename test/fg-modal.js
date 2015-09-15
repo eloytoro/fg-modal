@@ -1,6 +1,6 @@
 describe('Modal', function () {
     beforeEach(function () {
-        var testModule = angular.module('test.fgModal', ['fgModal']);
+        var testModule = angular.module('test.fg.modal', ['fg.modal']);
         testModule.config(function (ModalProvider) {
             ModalProvider.modal('test', {
                 template: '<div/>'

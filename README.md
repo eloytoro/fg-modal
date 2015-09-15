@@ -1,10 +1,10 @@
-# fgModal
+# fg.modal
 
 4Geeks' implementation of an angular modal
 
-## Why fgModal?
+## Why not other?
 
-There are many other libraries that achieve somewhat the same _basic_ feats fgModal does, but you'll find that using fgModal is far more intuitive and modular than any other library out there.
+There are many other libraries that achieve somewhat the same _basic_ feats fg.modal does, but you'll find that using fg.modal is far more intuitive and modular than any other library out there.
 
 AngularUI provides a set of **great** tools, I cannot stress that enough, however their modal implementation has (in my opinion) some fundamental flaws that led me create my own.
 
@@ -29,7 +29,7 @@ modalInstance.result.then(function (selectedItem) {
 ```
 Note that this logic is defined within the view's controller, that means that this modal is unique for this view, the whole idea that there are many modals alike across the application is discarded and in my experience thats what happens.
 
-fgModal is fully capable of recreating the same logic (using a different API) but instead of defining modals and their settings within controllers you'll be defining them using a `provider`
+fg.modal is fully capable of recreating the same logic (using a different API) but instead of defining modals and their settings within controllers you'll be defining them using a `provider`
 
 ## Provider
 
