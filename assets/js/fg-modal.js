@@ -1,222 +1,241 @@
 angular.module('fg.modal', ['ngAnimate'])
 
-.provider('Modal', function () {
-    var ModalTemplate = function (name, config) {
-        this.templateUrl = config.templateUrl;
-        this.template = config.template;
-        this.defaults = config.defaults || {};
-        this.controller = config.controller;
-        this.controllerAs = config.controllerAs;
-        this.class = config.class;
-        this.resolve = config.resolve || {};
-        this.name = name;
+.factory('ModalTemplate', function(
+  $document,
+  $compile,
+  $rootScope,
+  $http,
+  $templateCache,
+  $q,
+  $animate,
+  $injector,
+  $controller) {
+
+  var loadingTemplateUrl = null;
+  var loadingMask = true;
+
+  var $scope = $rootScope.$new(),
+    activeModals = [];
+
+  $scope.loadingTemplateUrl = loadingTemplateUrl;
+
+  var $wrapper = $compile(angular.element([
+    '<div class="fg-modal-wrapper fg-modal-dropzone ng-hide" ng-show="show">',
+    '<div ng-show="loading" ng-include="loadingTemplateUrl"></div>',
+    '</div>'
+  ].join('')))($scope);
+
+  function ModalTemplate(options) {
+    this.templateUrl  = options.templateUrl;
+    this.template     = options.template;
+    this.containerUrl = options.containerUrl;
+    this.defaults     = options.defaults || {};
+    this.controller   = options.controller;
+    this.controllerAs = options.controllerAs;
+    this.class        = options.class;
+    this.resolve      = options.resolve || {};
+  };
+
+  function Modal() {
+    var self = this;
+
+    this.$$deferredEvents = {
+      accept: $q.defer(),
+      dismiss: $q.defer(),
+      destroy: $q.defer()
     };
 
-    var storage = {};
-
-    var provider = this;
-
-    this.modal = function (name, invokable) {
-        storage[name] = function (injector) {
-            var results = injector.invoke(invokable);
-            return new ModalTemplate(name, results);
-        };
-        return provider;
+    this.$$eventListeners = {
+      link: [],
+      accept: [],
+      dismiss: [],
+      destroy: []
     };
 
-    this.loadingTemplateUrl = null;
-    this.loadingMask = true;
+    this.$$pendingEvents = [];
 
-    this.$get = function ($document, $compile, $rootScope, $http, $templateCache, $q, $animate, $injector, $controller) {
+  };
 
-        // Set all configurations
-        Object.keys(storage).forEach(function (key) {
-            storage[key] = storage[key]($injector);
-        });
+  Modal.prototype.$$trigger = function(prop) {
+    this.$$eventListeners[prop].forEach(function(cb) {
+      cb();
+    });
+  };
 
-        var $scope = $rootScope.$new(),
-            $element,
-            activeModals = [];
+  Modal.prototype.$$resolve = function(prop) {
+    var self = this;
+    var deferred = self.$$deferredEvents[prop];
+    if (this.$$pendingEvents.indexOf(prop) > -1)
+      return deferred.promise;
+    this.$$pendingEvents.push(prop);
+    var listeners = self.$$eventListeners[prop];
+    var tasks = listeners.map(function(cb) {
+      return $q.when(cb());
+    });
+    return $q.all(tasks)
+      .then(function () {
+        deferred.resolve();
+        return deferred.promise;
+      }, function (err) {
+        var index = self.$$pendingEvents.indexOf(prop);
+        self.$$pendingEvents.splice(index, 1);
+        return $q.reject(err);
+      });
+  };
 
-        $scope.loadingTemplateUrl = provider.loadingTemplateUrl;
+  Modal.prototype.accept = function() {
+    this.$$resolve('accept')
+      .then(this.destroy.bind(this))
+  };
 
-        function Modal (template) {
-            var _this = this,
-                deferred = {
-                    accept: $q.defer(),
-                    dismiss: $q.defer(),
-                    destroy: $q.defer()
-                },
-                callbacks = {
-                    link: [], overlay: [], conceal: [],
-                    accept: [], dismiss: [], destroy: []
-                },
-                resolve = function (prop) {
-                    return $q.all(callbacks[prop].map(function (cb) {
-                        return $q.when(cb());
-                    })).then(function () {
-                        deferred[prop].resolve();
-                        return deferred[prop].promise;
-                    });
-                },
-                call = function (prop) {
-                    callbacks[prop].forEach(function (cb) {
-                        cb();
-                    });
-                };
+  Modal.prototype.dismiss = function() {
+    return this.$$resolve('dismiss')
+      .then(this.destroy.bind(this));
+  };
 
-            this.$template = template;
-            this.$index = 0;
+  var animateLeave = function () {
+    return $animate.leave(this.$element);
+  };
 
-            this.accept = function () {
-                return resolve('accept')
-                    .then(_this.destroy);
-            };
+  var destroyModal = function () {
+    var self = this;
+    var index = _.findIndex(activeModals, function(modal) {
+      return modal.$scope.$$id === self.$scope.$$id;
+    });
 
-            this.dismiss = function () {
-                return resolve('dismiss')
-                    .then(_this.destroy);
-            };
+    activeModals.splice(index, 1);
 
-            this.destroy = function () {
-                return resolve('destroy')
-                    .then(function () {
-                        var index = activeModals.indexOf(_this);
-                        activeModals.splice(index, 1);
-                        _this.$element.remove();
+    $scope.show = activeModals.length;
 
-                        activeModals.forEach(function (modal) {
-                            if (modal.$index > _this.$index) modal.overlay();
-                        });
+    self.$scope.$destroy();
+  };
 
-                        $scope.show = activeModals.length;
+  var rejectUnresolvedEvents = function () {
+    var deferredEvents = this.$$deferredEvents;
+    deferredEvents.accept.reject();
+    deferredEvents.dismiss.reject();
+  };
 
-                        _this.$scope.$destroy();
-                    });
-            };
+  Modal.prototype.destroy = function() {
+    var self = this;
+    return this.$$resolve('destroy')
+      .then(animateLeave.bind(this))
+      .then(destroyModal.bind(this))
+      .then(rejectUnresolvedEvents.bind(this))
+      .then(this.$$deferredEvents.destroy.resolve);
+  };
 
-            this.when = function (e) {
-                return deferred[e].promise;
-            };
+  Modal.prototype.when = function(e) {
+    return this.$$deferredEvents[e].promise;
+  };
 
-            this.overlay = function () {
-                if (_this.$index === 0) return;
-                _this.$element.css('z-index', '+=1');
-                _this.$index--;
-                call('overlay');
-            };
+  Modal.prototype.on = function(e, cb) {
+    if (Array.isArray(cb)) return cb.forEach(this.on.bind(this, e));
+    var self = this;
+    e.split(' ').forEach(function(e) {
+      self.$$eventListeners[e].push(cb.bind(self));
+    });
+    return self;
+  };
 
-            this.conceal = function () {
-                _this.$element.css('z-index', '-=1');
-                _this.$index++;
-                call('conceal');
-            };
+  $document.find('body').append($wrapper);
 
-            this.on = function (e, cb) {
-                e.split(' ').forEach(function (e) {
-                    callbacks[e].push(cb.bind(_this));
-                });
-                return _this;
-            };
+  $wrapper.on('mouseup', function(e) {
+    if (angular.element(e.target).hasClass('fg-modal-dropzone')) {
+      activeModals.forEach(function (modal) {
+        modal.dismiss();
+      });
+    }
+  });
 
-            this.$$trigger = call;
-        };
+  ModalTemplate.prototype.render = function (scope) {
+    var modal = new Modal();
+    var self = this;
+    var hasContainer = self.containerUrl;
 
-        var $element = $compile(angular.element([
-            '<div class="fg-modal-wrapper fg-modal-dropzone ng-hide" ng-show="show">',
-                '<div ng-show="loading" ng-include="loadingTemplateUrl"></div>',
-            '</div>'
-        ].join('')))($scope);
+    scope = scope || {};
 
-        $document.find('body').append($element);
+    if (scope.constructor !== $rootScope.constructor) {
+      scope = angular.extend($scope.$new(), scope);
+    } else {
+      scope = scope.$new();
+    }
 
-        $element.on('mouseup', function (e) {
-            if (angular.element(e.target).hasClass('fg-modal-dropzone')) {
-                var first = factory.list()[0];
-                if (first) first.dismiss();
-            }
-        });
+    scope.$modal = modal;
 
-        ModalTemplate.prototype.pop = function (scope) {
-            var modal = new Modal(this);
+    $scope.loading = !$scope.show && loadingMask;
+    $scope.show = $scope.show || loadingMask;
 
-            scope = scope || {};
-
-            if (!scope.$id) {
-                scope = Object.keys(scope).reduce(function (acc, key) {
-                    acc[key] = scope[key];
-                    return acc;
-                }, $scope.$new());
-            } else {
-                scope = scope.$new();
-            }
-
-            scope.$modal = modal;
-
-            var _this = this;
-
-            $scope.loading = !$scope.show && provider.loadingMask;
-            $scope.show = $scope.show || provider.loadingMask;
-
-            $q.all({
-                locals: $q.all(Object.keys(this.resolve).reduce(function (acc, key) {
-                    acc[key] = $q.when($injector.invoke(_this.resolve[key]));
-                    return acc;
-                }, {
-                    $scope: scope,
-                    $modal: modal
-                })),
-                template: $q.when(this.template || $http({
-                    method: 'GET',
-                    cache: $templateCache,
-                    url: this.templateUrl,
-                    type: 'text/html'
-                }))
-            }).then(function (results) {
-                var clone = angular.element(results.template.data)
-                    .addClass('fg-modal');
-                if (_this.class)
-                    clone.addClass(_this.class);
-                var ctrl;
-                clone = $compile(clone)(scope);
-                modal.$scope = scope;
-                if (_this.controller)
-                    ctrl = $controller(_this.controller, results.locals);
-                $scope.loading = false;
-                $scope.show = true;
-                if (_this.controllerAs)
-                    scope[_this.controllerAs] = ctrl;
-                $element.append(clone);
-                modal.$element = clone;
-                activeModals.forEach(function (item) {
-                    item.conceal();
-                });
-                activeModals.unshift(modal);
-                modal.$$trigger('link');
-            });
-
-            Object.keys(this.defaults).forEach(function (key) {
-                var setting = _this.defaults[key];
-                (setting instanceof Array ? setting : [setting])
-                    .forEach(function (callback) {
-                        modal.on(key, callback);
-                    });
-            });
-
-            return modal;
-        };
-
-        var factory = function (name) {
-            if (!name) return activeModals[0];
-            return storage[name];
-        };
-
-        factory.list = function () {
-            return activeModals.sort(function (a, b) {
-                return a.$index > b.$index;
-            });
-        };
-
-        return factory;
+    var tasks = {
+      locals: $q.all(Object.keys(self.resolve).reduce(function(acc, key) {
+        acc[key] = $q.when($injector.invoke(self.resolve[key]));
+        return acc;
+      }, {
+        $scope: scope,
+        $modal: modal
+      })),
+      template: $q.when(self.template || $http({
+        method: 'GET',
+        cache: $templateCache,
+        url: self.templateUrl,
+        type: 'text/html'
+      }))
     };
+
+    if (hasContainer) {
+      tasks.container = $q.when(self.container || $http({
+        method: 'GET',
+        cache: $templateCache,
+        url: self.containerUrl,
+        type: 'text/html'
+      }))
+    }
+
+    $q.all(tasks).then(function(results) {
+      var htmlToElement = function (data) {
+        return angular.element(data).addClass('fg-modal');
+      };
+
+      var clone = hasContainer ?
+        htmlToElement(results.container.data) :
+        htmlToElement(results.template.data);
+
+      var ctrl;
+      var transcludeOpts = hasContainer && {
+        parentBoundTranscludeFn: function(noopScope, cloneLinkingFn) {
+          $compile(results.template.data)(scope, cloneLinkingFn);
+        }
+      };
+
+      var transcludeFn = function(clone, element) {
+        modal.$scope = scope;
+        if (self.controller)
+          ctrl = $controller(self.controller, results.locals);
+        $scope.loading = false;
+        $scope.show = true;
+        if (self.controllerAs)
+          scope[self.controllerAs] = ctrl;
+        var last = _.last(activeModals);
+        $animate.enter(clone, $wrapper, last && last.$element);
+        modal.$element = clone;
+        activeModals.unshift(modal);
+        modal.$$trigger('link');
+      };
+
+      $compile(clone)(scope, transcludeFn, transcludeOpts);
+    });
+
+    Object.keys(self.defaults).forEach(function(key) {
+      var actions = self.defaults[key];
+      if (!actions) return;
+      (Array.isArray(actions) ? actions : [actions])
+      .forEach(function(callback) {
+        modal.on(key, callback);
+      });
+    });
+
+    return modal;
+  };
+
+  return ModalTemplate;
 });
