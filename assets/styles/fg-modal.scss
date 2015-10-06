@@ -12,10 +12,12 @@
 
     &.ng-hide {
         opacity: 0;
+        pointer-events: none;
     }
 
     &.ng-hide-add, &.ng-hide-remove {
         display: block !important;
+        pointer-events: all;
     }
 
 }
