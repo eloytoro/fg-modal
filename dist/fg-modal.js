@@ -11,49 +11,40 @@ angular.module('fg.modal', ['ngAnimate'])
   $injector,
   $controller) {
 
-  var loadingTemplateUrl = null;
-  var loadingMask = true;
+  var $scope = $rootScope.$new();
+  var activeModals = [];
 
-  var $scope = $rootScope.$new(),
-    activeModals = [];
+  var MODAL_WRAPPER_TEMPLATE = '<div class="fg-modal-wrapper fg-modal-dropzone ng-hide" ng-show="show" />';
+  var MODAL_EVENTS = ['destroy', 'link', 'accept', 'dismiss'];
 
-  $scope.loadingTemplateUrl = loadingTemplateUrl;
+  var $wrapper = $compile(angular.element(MODAL_WRAPPER_TEMPLATE))($scope);
 
-  var $wrapper = $compile(angular.element([
-    '<div class="fg-modal-wrapper fg-modal-dropzone ng-hide" ng-show="show">',
-    '<div ng-show="loading" ng-include="loadingTemplateUrl"></div>',
-    '</div>'
-  ].join('')))($scope);
+  var toArray = function(val) {
+    return Array.isArray(val) ? val : [val];
+  };
 
   function ModalTemplate(options) {
     this.templateUrl = options.templateUrl;
     this.template = options.template;
     this.containerUrl = options.containerUrl;
-    this.defaults = options.defaults || {};
     this.controller = options.controller;
     this.controllerAs = options.controllerAs;
-    this.class = options.class;
     this.resolve = options.resolve || {};
+    this.defaults = _.mapValues(options.defaults || {}, toArray);
   };
 
   function Modal() {
     var self = this;
 
-    this.$$deferredEvents = {
-      accept: $q.defer(),
-      dismiss: $q.defer(),
-      destroy: $q.defer()
-    };
+    this.$$deferredEvents = {};
+    this.$$eventListeners = {};
 
-    this.$$eventListeners = {
-      link: [],
-      accept: [],
-      dismiss: [],
-      destroy: []
-    };
+    MODAL_EVENTS.forEach(function(prop) {
+      self.$$deferredEvents[prop] = $q.defer();
+      self.$$eventListeners[prop] = [];
+    })
 
     this.$$pendingEvents = [];
-
   };
 
   Modal.prototype.$$trigger = function(prop) {
@@ -148,6 +139,17 @@ angular.module('fg.modal', ['ngAnimate'])
     }
   });
 
+  ModalTemplate.prototype.inherit = function(options) {
+    var template = new ModalTemplate(_.defaults(options, this));
+    for (var key in this.defaults) {
+      var events = toArray(this.defaults[key]);
+      template.defaults[key] = key in options.defaults ?
+        template.defaults[key].concat(events) :
+        events;
+    }
+    return template;
+  };
+
   ModalTemplate.prototype.render = function(scope) {
     var modal = new Modal();
     var self = this;
@@ -163,8 +165,7 @@ angular.module('fg.modal', ['ngAnimate'])
 
     scope.$modal = modal;
 
-    $scope.loading = !$scope.show && loadingMask;
-    $scope.show = $scope.show || loadingMask;
+    $scope.show = $scope.show;
 
     var tasks = {
       locals: $q.all(Object.keys(self.resolve).reduce(function(acc, key) {

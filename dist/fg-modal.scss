@@ -12,6 +12,7 @@
 
     &.ng-hide {
         opacity: 0;
+        pointer-events: none;
     }
 
     &.ng-hide-add, &.ng-hide-remove {
