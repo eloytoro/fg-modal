@@ -12,6 +12,7 @@
 
     &.ng-hide {
         opacity: 0;
+        pointer-events: none;
     }
 
     &.ng-hide-add, &.ng-hide-remove {
@@ -36,8 +37,5 @@
 }
 
 .fg-modal {
-    z-index: 10000;
     position: absolute;
-    margin: auto;
-    left: 0; top: 0; right: 0; bottom: 0;
 }
