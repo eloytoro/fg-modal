@@ -53,7 +53,7 @@ angular.module('fg.modal', ['ngAnimate'])
     });
   };
 
-  Modal.prototype.$$resolve = function(prop) {
+  Modal.prototype.$$resolve = function(prop, value) {
     var self = this;
     var deferred = self.$$deferredEvents[prop];
     if (this.$$pendingEvents.indexOf(prop) > -1)
@@ -61,11 +61,11 @@ angular.module('fg.modal', ['ngAnimate'])
     this.$$pendingEvents.push(prop);
     var listeners = self.$$eventListeners[prop];
     var tasks = listeners.map(function(cb) {
-      return $q.when(cb());
+      return $q.when(cb(value));
     });
     return $q.all(tasks)
       .then(function() {
-        deferred.resolve();
+        deferred.resolve(value);
         return deferred.promise;
       }, function(err) {
         var index = self.$$pendingEvents.indexOf(prop);
@@ -74,13 +74,13 @@ angular.module('fg.modal', ['ngAnimate'])
       });
   };
 
-  Modal.prototype.accept = function() {
-    this.$$resolve('accept')
+  Modal.prototype.accept = function(value) {
+    this.$$resolve('accept', value)
       .then(this.destroy.bind(this))
   };
 
-  Modal.prototype.dismiss = function() {
-    return this.$$resolve('dismiss')
+  Modal.prototype.dismiss = function(value) {
+    return this.$$resolve('dismiss', value)
       .then(this.destroy.bind(this));
   };
 
